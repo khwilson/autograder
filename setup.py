@@ -33,7 +33,7 @@ setup(
     description="A simple autograder library",
     entry_points="""
     [console_scripts]
-    autograder=autograder.cli:cli
+    autograder=autograder.cli:main
     """,
     long_description="\n" + open('README', 'r').read()
 )

@@ -3,13 +3,15 @@ import click
 from sqlalchemy.orm import sessionmaker
 
 
-from . import web
+from . import setup_app, web
 
 
 @click.group()
-def cli():
+@click.option('--config', '-c', nargs=1, help="Locatio of config yaml")
+@click.pass_context
+def cli(ctx, config):
     """ The CLI for the autograder """
-    pass
+    setup_app(config)
 
 
 @cli.group('web')
@@ -45,3 +47,7 @@ def add_user(username, password):
     """ Add a user with the given username """
     from . import models
     models.User.add_user(username, password)
+
+
+def main():
+    return cli(obj={})

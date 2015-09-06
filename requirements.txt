@@ -2,3 +2,4 @@ click
 flask
 flask-login
 flask-sqlalchemy
+pyyaml

@@ -1,0 +1,2 @@
+secret_key: randomstringofcharacters
+sqlalchemy_database_uri: sqlite:////tmp/testdb.sqlite

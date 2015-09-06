@@ -1,9 +1,16 @@
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 
+from . import config as config_module
+
 
 app = Flask(__name__, static_url_path='')
-app.config['SECRET_KEY'] = 'SOMETHINGSOMETHING'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
-
+config = None
 db = SQLAlchemy(app)
+
+
+def setup_app(config_path):
+    global config
+    cfg = config_module.load_config(config_path)
+    config_module.config_app(app, cfg)
+    config = config_module.config
