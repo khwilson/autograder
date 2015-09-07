@@ -41,3 +41,6 @@ build/
 MANIFEST
 
 .tox/
+
+# The actual config I'm using with api keys and whatnot
+config.yml

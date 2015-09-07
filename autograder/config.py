@@ -1,13 +1,28 @@
+"""
+Configuration objects and functions. The global config is stored here in the
+config variable and `load_config` should be called if you want to use it.
+
+@author Kevin Wilson - khwilson@gmail.com
+"""
+
 import yaml
 
 
 config = None
 
 
-class Config(object):
+class Config:
     def __init__(self, d):
         self.secret_key = d['secret_key']
         self.sqlalchemy_database_uri = d['sqlalchemy_database_uri']
+        self.iron = IronConfig(d['iron'])
+        self.submissions_directory = d['submissions_directory']
+        self.holding_directory = d['holding_directory']
+
+
+class IronConfig:
+    def __init__(self, d):
+        self.project_id = d['project_id']
 
 
 def load_config(f):

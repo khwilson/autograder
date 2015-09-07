@@ -1,2 +1,8 @@
 secret_key: randomstringofcharacters
 sqlalchemy_database_uri: sqlite:////tmp/testdb.sqlite
+
+iron:
+  project_id: 'arandomseriesofnumbers'
+
+submissions_directory: /tmp/submissions
+holding_directory: /tmp/subholding
