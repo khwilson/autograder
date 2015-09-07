@@ -82,13 +82,25 @@ class Unit(db.Model):
     __tablename__ = 'units'
 
     id = db.Column(db.Integer, primary_key=True)
+    description = db.Column(db.String(255))
+    creator_id = db.Column(db.Integer, db.ForeignKey(User.id))
     created_at = db.Column(db.DateTime)
 
     registrations = db.relationship("Registration", backref="unit")
     assignments = db.relationship("Assignment", backref="unit")
+    creator = db.relationship("User")
 
-    def __init__(self):
+    def __init__(self, description, creator_id):
+        self.description = description
+        self.creator_id = creator_id
         self.created_at = datetime.utcnow()
+
+    @staticmethod
+    def add_unit(description, creator):
+        unit = Unit(description, creator.id)
+        db.session.add(unit)
+        db.session.commit()
+        return unit
 
 
 class Registration(db.Model):
@@ -126,7 +138,7 @@ class Assignment(db.Model):
     due_date = db.Column(db.DateTime)
     unit_id = db.Column(db.Integer, db.ForeignKey(Unit.id))
     assigner_id = db.Column(db.Integer, db.ForeignKey(User.id))
-    project_id = db.Column(db.Integer, db.ForeignKey(Project.id))
+    project_id = db.Column(db.Integer, db.ForeignKey("projects.id"))
 
     assigner = db.relationship("User")
 
@@ -179,7 +191,7 @@ class Submission(db.Model):
     submitted_at = db.Column(db.DateTime)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id))
     assignment_id = db.Column(db.Integer, db.ForeignKey(Assignment.id))
-    submission_key = db.Column(String(36))
+    submission_key = db.Column(db.String(36))
     token_hash = db.Column(db.String(200))
 
     results_at = db.Column(db.DateTime, nullable=True)
