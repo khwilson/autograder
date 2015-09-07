@@ -35,5 +35,5 @@ setup(
     [console_scripts]
     autograder=autograder.cli:main
     """,
-    long_description="\n" + open('README', 'r').read()
+    long_description="\n" + open('README.md', 'r').read()
 )
