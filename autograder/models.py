@@ -11,7 +11,7 @@ from sqlalchemy.types import TypeDecorator, VARCHAR
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from . import db
-from .utils import random_token
+from .utils import random_project_key, random_token
 
 
 SALT_LENGTH = 100
@@ -50,6 +50,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.Unicode(100))
     pw_hash = db.Column(db.String(200))
     active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime)
 
     registrations = db.relationship("Registration", backref="user")
 
@@ -58,6 +59,7 @@ class User(db.Model, UserMixin):
         self.pw_hash = generate_password_hash(password, salt_length=SALT_LENGTH,
                                               method=PW_HASH_METHOD)
         self.active = active
+        self.created_at = datetime.utcnow()
 
     def is_active(self):
         return self.active
@@ -170,10 +172,22 @@ class Project(db.Model):
     name = db.Column(db.String(255))
     project_type = db.Column(db.String(100))
     project_key = db.Column(db.String(36))
+    created_at = db.Column(db.DateTime)
+    creator_id = db.Column(db.Integer, db.ForeignKey(User.id))
+
+    creator = db.relationship("User")
+
+    def __init__(self, name, project_type, creator_id, project_key):
+        self.name = name
+        self.project_type = project_type
+        self.project_key = project_key
+        self.creator_id = creator_id
+        self.created_at = datetime.utcnow()
 
     @staticmethod
-    def add_project(name, project_type, project_key):
-        project = Project(name, project_type, project_key)
+    def add_project(name, project_type, creator, project_key=None):
+        project_key = project_key or random_project_key()
+        project = Project(name, project_type, creator.id, project_key)
         db.session.add(project)
         db.session.commit()
         return project

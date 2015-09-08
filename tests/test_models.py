@@ -6,6 +6,8 @@ import shutil
 import tempfile
 import yaml
 
+from sqlalchemy.orm import load_only
+
 import autograder
 
 
@@ -66,11 +68,28 @@ def test_models(models):
     create_time_tolerance = timedelta(seconds=10)
 
     # Insert a few units
+    units = []
     for creator, suffix in zip(users, '12345'):
         description = 'Class ' + suffix
         now = datetime.utcnow()
         unit = models.Unit.add_unit(description, creator)
+        units.append(unit)
         assert unit.created_at - now < create_time_tolerance
         assert unit.creator.username == creator.username
 
+    assert models.db.session.query(models.Unit).count() == 5
 
+    # Make a few projects
+    projects = []
+    for user, suffix in zip(users, '12345'):
+        project_name = 'project' + suffix
+        project_type = 'type' + suffix
+        project = models.Project.add_project(project_name, project_type, user)
+        projects.append(project)
+        assert project.creator.id == user.id
+        assert project.creator_id == user.id
+
+    assert models.db.session.query(models.Project).count() == 5
+    db_projects = models.db.session.query(models.Project).options(load_only("project_key")).all()
+    assert ({project.project_key for project in db_projects} ==
+            {project.project_key for project in projects})
