@@ -5,28 +5,15 @@ Queuing functions for the IronWorker framework from iron.io.
 """
 import shutil
 import subprocess
-import tempfile
 
 from iron_worker import IronWorker, Task
 
+from .utils import NamedTemporaryDirectory
 from .. import models, storage
 
 
 # Max timeout for now
 TIMEOUT = 60
-
-
-class NamedTemporaryDirectory(object):
-    """ A context manager that creates a temporary directory and deletes it on exit """
-
-    def __init__(self):
-        self.directory = tempfile.mkdtemp()
-
-    def __enter__(self):
-        return self.directory
-
-    def __exit__(self, *args):
-        shutil.rmtree(self.directory)
 
 
 def make_worker(directory, executable, project_type, project_key):

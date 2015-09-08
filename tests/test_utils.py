@@ -1,6 +1,22 @@
+import os
 import random
 
 from autograder import utils
+
+
+def test_named_temporary_directory():
+    """
+    Create a directory, add a file, and exit the `with`.
+
+    No errors should arise and the file and directory should be gone
+    after exiting the `with`.
+    """
+    with utils.NamedTemporaryDirectory() as directory:
+        assert os.path.isdir(directory)
+        with open(os.path.join(directory, 'somefile'), 'w') as f:
+            f.write("HELLO!!!!")
+    assert not os.path.exists(os.path.join(directory, 'somefile'))
+    assert not os.path.exists(directory)
 
 
 def test_random_token():
