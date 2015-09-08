@@ -8,7 +8,7 @@ import subprocess
 
 from iron_worker import IronWorker, Task
 
-from .utils import NamedTemporaryDirectory
+from ..utils import NamedTemporaryDirectory
 from .. import models, storage
 
 
