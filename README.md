@@ -1,3 +1,5 @@
+[![Build Status](https://api.travis-ci.org/khwilson/autograder.svg)](https://travis-ci.org/khwilson/autograder)
+
 Autograder
 ==========
 
