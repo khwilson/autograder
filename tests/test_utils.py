@@ -18,3 +18,9 @@ def test_random_token():
     # Make sure that tokens are actually somewhat random
     for i in range(len(tokens) - 1):
         assert tokens[i] != tokens[i+1][:i+1]
+
+
+def test_random_project_key():
+    """ Just make sure the each project key is different """
+    keys = [utils.random_project_key() for _ in range(20)]
+    assert len(set(keys)) == len(keys)
