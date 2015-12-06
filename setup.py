@@ -28,8 +28,8 @@ setup(
     license="Apache",
     packages=find_packages(),
     cmdclass={"test": PyTest},
-    install_requires=open('requirements.txt', 'r').readlines(),
-    tests_require=open('requirements.testing.txt', 'r').readlines(),
+    install_requires=open('requirements.in', 'r').readlines()[:-1],
+    tests_require=open('requirements.testing.in', 'r').readlines(),
     description="A simple autograder library",
     entry_points="""
     [console_scripts]

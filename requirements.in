@@ -1,0 +1,6 @@
+click
+flask
+flask-login
+flask-sqlalchemy
+pyyaml
+-r requirements.testing.in
