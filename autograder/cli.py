@@ -6,11 +6,9 @@ The command line interface for the autograder.
 from __future__ import print_function
 
 import click
+import subprocess
 import sys
 import uuid
-
-from sqlalchemy.orm import sessionmaker
-
 
 from . import setup_app, web
 

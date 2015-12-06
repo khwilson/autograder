@@ -5,6 +5,7 @@ Object models and relations for the autograder.
 """
 from datetime import datetime, timedelta
 import json
+import uuid
 
 from flask.ext.login import UserMixin
 from sqlalchemy.types import TypeDecorator, VARCHAR

@@ -3,8 +3,10 @@ Queuing functions for the IronWorker framework from iron.io.
 
 @author Kevin Wilson - khwilson@gmail.com
 """
+import os
 import shutil
 import subprocess
+import uuid
 
 from iron_worker import IronWorker, Task
 

@@ -4,6 +4,8 @@ The actual Flask app to be used as the web broker for the autograder.
 @author Kevin Wilson - khwilson@gmail.com
 """
 import datetime
+import os
+import uuid
 
 from flask import Flask, request, render_template, redirect, url_for, flash, g
 from flask.ext.login import (LoginManager, current_user, login_required,

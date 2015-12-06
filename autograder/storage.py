@@ -3,6 +3,8 @@ Functions related to storing code and submissions.
 
 @author Kevin Wilson - khwilson@gmail.com
 """
+import shutil
+
 from config import config
 
 

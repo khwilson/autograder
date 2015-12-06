@@ -18,23 +18,25 @@ def config_path(request):
     holding_directory = tempfile.mkdtemp()
 
     test_config = {
-      'secret_key': 'itsasecret',
-      'sqlalchemy_database_uri': 'sqlite://',
-      'iron': {
-        'project_id': 'notnecessary'
-      },
-      'submissions_directory': submissions_directory,
-      'holding_directory': holding_directory
+        'secret_key': 'itsasecret',
+        'sqlalchemy_database_uri': 'sqlite://',
+        'iron': {
+            'project_id': 'notnecessary'
+        },
+        'submissions_directory': submissions_directory,
+        'holding_directory': holding_directory
     }
 
     opened_file_descriptor, filepath = tempfile.mkstemp()
     opened_file = os.fdopen(opened_file_descriptor, 'w')
     yaml.dump(test_config, opened_file)
     opened_file.close()
+
     def fin():
         os.unlink(filepath)
         shutil.rmtree(submissions_directory)
         shutil.rmtree(holding_directory)
+
     request.addfinalizer(fin)
     return filepath
 
@@ -61,7 +63,8 @@ def test_models(models):
         users.append(user)
         assert user is not None, "User {} was not stored in db".format(username)
         assert user.check_password(password), "Password was not set correctly"
-        assert not user.check_password(password + 'nope'), "Password check succeeded when it shouldn't"
+        assert not user.check_password(password + 'nope'), \
+            "Password check succeeded when it shouldn't"
     assert models.db.session.query(models.User).count() == 5
 
     # Max tolerance allowed for db to create the unit entry
