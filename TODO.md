@@ -1,11 +1,9 @@
 * Making the above code actually work (including filling in all the templates I just left blank)
   - Fill in templates left blank
-  - Tests for models
   - Tests for cli
   - Tests for iron stuff
 * Making a semireasonable interface (HTML)
 * Having a concept of teachers and students
-  - ~~Add models~~
   - Add CLI
   - Add REST
 * Allowing teachers and students to see results
