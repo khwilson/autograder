@@ -88,6 +88,20 @@ class Teacher(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey(User.id))
     unit_id = db.Column(db.Integer, db.ForeignKey("units.id"))
 
+    @staticmethod
+    def add_teacher(user, unit):
+        """ Add a teacher to a unit
+
+        :param User user: The user who should be a teacher
+        :param Unit unit: The unit to which they will be added as a teacher
+        :return: The Teacher object
+        :rtype: Teacher
+        """
+        teacher = Teacher(user_id=user.id, unit_id=unit.id)
+        db.session.add(teacher)
+        db.session.commit()
+        return teacher
+
 
 class Unit(db.Model):
     """ This model represents a class, but we can't call it a class because reserved words """
@@ -101,6 +115,7 @@ class Unit(db.Model):
     registrations = db.relationship("Registration", backref="unit")
     assignments = db.relationship("Assignment", backref="unit")
     creator = db.relationship("User")
+    teachers = db.relationship("Teacher", backref="unit")
 
     def __init__(self, description, creator_id):
         self.description = description
@@ -136,10 +151,9 @@ class Registration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id))
     unit_id = db.Column(db.Integer, db.ForeignKey(Unit.id))
-    is_teacher = db.Column(db.Boolean, default=False)
 
     @staticmethod
-    def add_registration(user, unit, is_teacher=False):
+    def add_registration(user, unit):
         """ Create a new registration of a user in a unit.
 
         :param User user: The user to create the registration for
@@ -148,7 +162,7 @@ class Registration(db.Model):
         :return: The registration object committed to the db
         :rtype: Registration
         """
-        reg = Registration(user.id, unit.id, is_teacher)
+        reg = Registration(user_id=user.id, unit_id=unit.id)
         db.session.add(reg)
         db.session.commit()
         return reg
@@ -166,6 +180,7 @@ class Assignment(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey("projects.id"))
 
     assigner = db.relationship("User")
+    project = db.relationship("Project")
 
     def __init__(self, assigner_id, unit_id, project_id, due_date=None, max_submissions=-1):
         """ Initailize an assignment.
@@ -184,6 +199,29 @@ class Assignment(db.Model):
         self.project_id = project_id
         self.due_date = due_date or datetime.utcnow() + ONE_YEAR
         self.max_submissions = max_submissions
+
+    @staticmethod
+    def add_assignment(assigner, unit, project, due_date=None, max_submissions=-1):
+        """
+        :param int assigner_id: Who is assigning the assignment? Should be a teacher
+            in the relevant unit at the time of assignment.
+        :param int unit_id: The unit which this assignment is associated with.
+        :param int project_id: Which project is being assigned?
+        :param datetime due_date: When is the assignment due? If not specified, then
+            it will be due 1 year hence.
+        :param int max_submissions: The maximum number of submissions allowed. If -1,
+            then an infinite number is allowed.
+        :return: The created assignment
+        :rtype: Assignment
+        :raises ValueError: If the assigner is not a teacher in the passed unit
+        """
+        if not any(teacher.id == assigner.id for teacher in unit.teachers):
+            raise ValueError("Only a teacher may assign a project to a unit")
+        assignment = Assignment(assigner.id, unit.id, project.id,
+                                due_date=due_date, max_submissions=max_submissions)
+        db.session.add(assignment)
+        db.session.commit()
+        return assignment
 
 
 class Project(db.Model):
@@ -237,14 +275,11 @@ class Submission(db.Model):
     user = db.relationship("User")
     assignment = db.relationship("Assignment")
 
-    def __init__(self, user_id, assignment_id, token=None):
-        if token is None:
-            token = random_token()
-
+    def __init__(self, user_id, assignment_id, token):
         self.submitted_at = datetime.utcnow()
-        self.submission_key = uuid.uuid4()
+        self.submission_key = str(uuid.uuid4())
         self.user_id = user_id
-        self.assigner_id = assignment_id
+        self.assignment_id = assignment_id
         self.token_hash = generate_password_hash(token, salt_length=SALT_LENGTH,
                                                         method=PW_HASH_METHOD)
         self.results_at = None
@@ -252,10 +287,27 @@ class Submission(db.Model):
 
     @staticmethod
     def add_submission(user, assignment, token=None):
-        submission = Submission(user.id, project.id, token=token)
+        """ Add a submission. Note that every submission needs a token so that the
+        autograder can post results. If you do not supply a token, then a random one
+        will be generated.
+
+        :param User user: The user submitting
+        :param Assignment assignment: The assignment the user is submitting
+        :param str|None token: The token used to submit results of the submission
+        :return: The Submission object and token
+        :rtype: Submission, str
+        :raises ValueError: If the user has not been assigned the given assignment
+        """
+        if not token:
+            token = random_token()
+
+        if len(user.registrations) == 0 or not any(assignment.unit_id == reg.unit_id for reg in user.registrations):
+            raise ValueError("A user may only submit an assignment they've been assigned")
+
+        submission = Submission(user.id, assignment.id, token=token)
         db.session.add(submission)
         db.session.commit()
-        return submission
+        return submission, token
 
     def check_token(self, token):
         return check_password_hash(self.token_hash, token)

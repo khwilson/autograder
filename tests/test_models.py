@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 
-import pytest
 import os
 import shutil
 import tempfile
+
+import pytest
 import yaml
 
 from sqlalchemy.orm import load_only
@@ -90,6 +91,16 @@ def test_models(models):
 
     assert models.db.session.query(models.Unit).count() == 5
 
+    # Add a student (Rotate the users by one for student)
+    registrations = []
+    for unit, student in zip(units, users[1:] + [users[0]]):
+        reg = models.Registration.add_registration(student, unit)
+        registrations.append(reg)
+        assert reg.user.id == student.id
+        assert reg.unit.id == unit.id
+
+    assert models.db.session.query(models.Registration).count() == 5
+
     # Make a few projects
     projects = []
     for user, suffix in zip(users, '12345'):
@@ -104,3 +115,40 @@ def test_models(models):
     db_projects = models.db.session.query(models.Project).options(load_only("project_key")).all()
     assert ({project.project_key for project in db_projects} ==
             {project.project_key for project in projects})
+
+    # Make a few assignments
+    assignments = []
+    for i, (user, unit, project) in enumerate(zip(users, units, projects)):
+        assignment = models.Assignment.add_assignment(user, unit, project, max_submissions=i)
+        assignments.append(assignment)
+        assert assignment.unit.id == unit.id
+        assert assignment.project.id == project.id
+        assert assignment.assigner.id == user.id
+        assert datetime.utcnow() - assignment.due_date < create_time_tolerance + models.ONE_YEAR
+        assert assignment.max_submissions == i
+
+    assert models.db.session.query(models.Assignment).count() == 5
+
+    # Try to have a non-teacher create an assignment
+    with pytest.raises(ValueError):
+        models.Assignment.add_assignment(users[1], units[0], projects[2])
+
+    # Make a few submissions (Note that we have to rotate the users so they'll be students)
+    submissions = []
+    for user, assignment in zip(users[1:] + [users[0]], assignments):
+        submission, token = models.Submission.add_submission(user, assignment)
+        submissions.append(submission)
+        assert submission.user.id == user.id
+        assert submission.assignment.id == assignment.id
+        assert submission.check_token(token)
+        assert not submission.check_token(token + 'foo')
+
+    assert len({submission.submission_key for submission in submissions}) == 5
+    assert models.db.session.query(models.Submission).count() == 5
+
+    # Post some results
+    for submission, result in zip(submissions, 'ABCDF'):
+        submission.post_results({'grade': result})
+
+    assert {submission.results['grade'] for submission in models.db.session.query(models.Submission).options(load_only("results")).all()} == \
+            set('ABCDF')
