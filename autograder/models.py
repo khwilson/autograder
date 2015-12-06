@@ -79,6 +79,15 @@ class User(db.Model, UserMixin):
         return db.session.query(User).filter(User.username == username).first()
 
 
+class Teacher(db.Model):
+    """ This model represents all the users who have teacher powers in a class """
+    __tablename__ = 'teachers'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id))
+    unit_id = db.Column(db.Integer, db.ForeignKey("units.id"))
+
+
 class Unit(db.Model):
     """ This model represents a class, but we can't call it a class because reserved words """
     __tablename__ = 'units'
@@ -99,9 +108,22 @@ class Unit(db.Model):
 
     @staticmethod
     def add_unit(description, creator):
+        """ Create a unit with the passed description and creator.
+
+        :param str description: A description of the course
+        :param User creator: The person creating the course.
+        :return: The created Unit
+        :rtype: Unit
+        """
         unit = Unit(description, creator.id)
         db.session.add(unit)
         db.session.commit()
+
+        # When a unit is created, make sure to setup its creator as a teacher
+        teacher = Teacher(user_id=creator.id, unit_id=unit.id)
+        db.session.add(teacher)
+        db.session.commit()
+
         return unit
 
 

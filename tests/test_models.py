@@ -54,7 +54,7 @@ def test_models(models):
     # Insert a few users
     users = []
     for suffix in '12345':
-        username = 'username' + suffix
+        username = u'username' + suffix
         password = 'password' + suffix
         models.User.add_user(username, password)
         user = models.User.get_user_by_name(username)
@@ -76,6 +76,14 @@ def test_models(models):
         units.append(unit)
         assert unit.created_at - now < create_time_tolerance
         assert unit.creator.username == creator.username
+
+    # Make sure that the creator of the unit is a teacher
+    for unit in units:
+        teachers = models.db.session.query(models.Teacher).filter(
+            models.Teacher.unit_id == unit.id).all()
+        assert len(teachers) == 1
+        teacher = teachers[0]
+        assert teacher.id == unit.creator_id
 
     assert models.db.session.query(models.Unit).count() == 5
 
