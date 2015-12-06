@@ -5,16 +5,18 @@ The command line interface for the autograder.
 """
 from __future__ import print_function
 
-import click
+import getpass
 import subprocess
 import sys
 import uuid
+
+import click
 
 from . import setup_app, web
 
 
 @click.group()
-@click.option('--config', '-c', nargs=1, help="Locatio of config yaml")
+@click.option('--config', '-c', nargs=1, help="Location of config yaml")
 @click.pass_context
 def cli(ctx, config):
     """ The CLI for the autograder """
@@ -28,10 +30,12 @@ def web_group():
 
 
 @web_group.command('start')
+@click.option('--port', '-p', nargs=1, type=int, default=8888)
+@click.option('--host', '-h', nargs=1, type=str, default='localhost')
 @click.option('--debug/--no-debug', default=False, help="Should we start the app in debug mode?")
-def start(debug):
+def start(debug, host, port):
     """ Start the webserver """
-    web.app.run(debug=debug)
+    web.app.run(debug=debug, host=host, port=port)
 
 
 @cli.group('user')
@@ -40,18 +44,17 @@ def user():
     pass
 
 
-@user.command('setup')
-def setup_user():
-    """ Setup the user database """
-    from . import models
-    models.create_all()
-
-
 @user.command('add')
 @click.argument('username')
+@click.option('--password', '-p', nargs=1, default=None,
+              help="Specify a password on the command line. If not passed, then "
+                   "user will be prompted for a password.")
 @click.password_option()
 def add_user(username, password):
     """ Add a user with the given username """
+    if not password:
+        password = getpass.getpass()
+
     from . import models
     models.User.add_user(username, password)
 
@@ -95,7 +98,7 @@ def submit_group():
 @click.password_option
 def submit_code(username, project_name, code_directory, password):
     from . import models, queues
-    user = User.get_user_by_name(username)
+    user = models.User.get_user_by_name(username)
     if not user:
         click.echo("User {} doesn't exist".format(username), err=True)
         sys.exit(1)
@@ -112,6 +115,22 @@ def submit_code(username, project_name, code_directory, password):
     submission = queues.submit_code(user, project, code_directory)
     models.db.session.add(submission)
     models.db.commit()
+
+
+@cli.group('db')
+def db():
+    pass
+
+
+@db.command('setup')
+@click.option('--recreate/--keep',
+              help="Recreate the entire database or merely insert missing tables",
+              default=False)
+def setup_db(recreate):
+    from autograder import models as m
+    if recreate:
+        m.drop_all()
+    m.create_all()
 
 
 def main():

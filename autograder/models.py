@@ -281,7 +281,7 @@ class Submission(db.Model):
         self.user_id = user_id
         self.assignment_id = assignment_id
         self.token_hash = generate_password_hash(token, salt_length=SALT_LENGTH,
-                                                        method=PW_HASH_METHOD)
+                                                 method=PW_HASH_METHOD)
         self.results_at = None
         self.results = None
 
@@ -301,7 +301,8 @@ class Submission(db.Model):
         if not token:
             token = random_token()
 
-        if len(user.registrations) == 0 or not any(assignment.unit_id == reg.unit_id for reg in user.registrations):
+        if (len(user.registrations) == 0 or
+                not any(assignment.unit_id == reg.unit_id for reg in user.registrations)):
             raise ValueError("A user may only submit an assignment they've been assigned")
 
         submission = Submission(user.id, assignment.id, token=token)
@@ -320,3 +321,7 @@ class Submission(db.Model):
 
 def create_all():
     db.create_all()
+
+
+def drop_all():
+    db.drop_all()

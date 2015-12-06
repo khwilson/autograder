@@ -49,11 +49,17 @@ def models(config_path):
 
     # Now that setup has occurred, we can import the models
     from autograder import models as m
+
+    # Make sure that if we've used a different db setup in another module
+    # we don't keep trying to write to that database
+    m.db.session.remove()
+
+    m.drop_all()
     m.create_all()
     return m
 
 
-def test_models(models):
+def test_models(models, config_path):
     # Insert a few users
     users = []
     for suffix in '12345':
@@ -151,4 +157,4 @@ def test_models(models):
         submission.post_results({'grade': result})
 
     assert {submission.results['grade'] for submission in models.db.session.query(models.Submission).options(load_only("results")).all()} == \
-            set('ABCDF')
+        set('ABCDF')
