@@ -111,8 +111,7 @@ def test_models(models, config_path):
     projects = []
     for user, suffix in zip(users, '12345'):
         project_name = 'project' + suffix
-        project_type = 'type' + suffix
-        project = models.Project.add_project(project_name, project_type, user)
+        project = models.Project.add_project(project_name, 'hello.exe', user)
         projects.append(project)
         assert project.creator.id == user.id
         assert project.creator_id == user.id

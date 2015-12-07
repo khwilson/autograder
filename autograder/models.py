@@ -231,24 +231,25 @@ class Project(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
-    project_type = db.Column(db.String(100))
+    executable = db.Column(db.String(255))
     project_key = db.Column(db.String(36))
     created_at = db.Column(db.DateTime)
     creator_id = db.Column(db.Integer, db.ForeignKey(User.id))
 
     creator = db.relationship("User")
 
-    def __init__(self, name, project_type, creator_id, project_key):
+    def __init__(self, name, executable, creator_id, project_key):
         self.name = name
-        self.project_type = project_type
+        self.executable = executable
         self.project_key = project_key
         self.creator_id = creator_id
         self.created_at = datetime.utcnow()
 
     @staticmethod
-    def add_project(name, project_type, creator, project_key=None):
+    def add_project(name, executable, creator, project_key=None):
         project_key = project_key or random_project_key()
-        project = Project(name, project_type, creator.id, project_key)
+        project = Project(name=name, executable=executable,
+                          creator_id=creator.id, project_key=project_key)
         db.session.add(project)
         db.session.commit()
         return project
@@ -256,6 +257,10 @@ class Project(db.Model):
     @staticmethod
     def get_project_by_name(name):
         return db.session.query(Project).filter(Project.name == name).first()
+
+    @staticmethod
+    def get_project_by_key(project_key):
+        return db.session.query(Project).filter(Project.project_key == project_key).first()
 
 
 class Submission(db.Model):

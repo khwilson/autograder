@@ -3,16 +3,13 @@ The command line interface for the autograder.
 
 @author Kevin Wilson - khwilson@gmail.com
 """
-from __future__ import print_function
-
 import getpass
-import subprocess
 import sys
-import uuid
 
 import click
 
 from . import setup_app, web
+from .queues import local as queues
 
 
 @click.group()
@@ -65,25 +62,28 @@ def project():
     pass
 
 
-def generate_project_key():
-    return uuid.uuid4()
-
-
 @project.command('add')
+@click.argument('username')
 @click.argument('name')
-@click.argument('directory')
+@click.argument('payload')
 @click.argument('executable')
-@click.argument('projecttype')
-def add_project(name, directory, executable, projecttype):
-    try:
-        queues.make_worker(directory, executable, projecttype, project_key)
-    except subprocess.CalledProcessError as exc:
-        click.echo("Error in creating project: " + exc.message, err=True)
-        sys.exit(1)
-
+@click.option('--password', '-p', nargs=1, type=str, default=None)
+def add_project(username, name, payload, executable, password):
     from . import models
-    project_key = generate_project_key()
-    models.Project.add_project(executable, projecttype, project_key)
+    attempts = 0
+    user = models.db.session.query(models.User).filter(models.User.username == username).first()
+    while not user.check_password(password or '') and attempts < 3:
+        password = getpass.getpass()
+        if password and user.check_password(password):
+            break
+        attempts += 1
+
+    if attempts == 3:
+        raise ValueError("Too many attempts at password")
+
+    project_key = queues.make_worker(payload, executable)
+    models.Project.add_project(name, executable, user, project_key=project_key)
+    click.echo("Project added with key {}".format(project_key))
 
 
 @cli.group('submissions')

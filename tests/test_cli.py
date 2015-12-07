@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import os
 import random
+import re
 import shutil
 import subprocess
 import tempfile
@@ -18,6 +19,7 @@ def config_path(request):
     """ A py.test fixture which creates a config file on disk and returns the path to the config """
     submissions_directory = tempfile.mkdtemp()
     holding_directory = tempfile.mkdtemp()
+    payload_directory = tempfile.mkdtemp()
     database_fd, database_filepath = tempfile.mkstemp()
 
     opened_file = os.fdopen(database_fd, 'w')
@@ -29,6 +31,9 @@ def config_path(request):
         'sqlalchemy_database_uri': 'sqlite:///' + database_filepath,
         'iron': {
             'project_id': 'notnecessary'
+        },
+        'local': {
+            'payload_directory': payload_directory
         },
         'submissions_directory': submissions_directory,
         'holding_directory': holding_directory
@@ -44,6 +49,7 @@ def config_path(request):
         os.unlink(database_filepath)
         shutil.rmtree(submissions_directory)
         shutil.rmtree(holding_directory)
+        shutil.rmtree(payload_directory)
 
     request.addfinalizer(fin)
     return filepath
@@ -119,6 +125,27 @@ def test_user_add(db, config_path, test_users):
     assert not teacher.check_password(teacher_password + 'foo')
     assert student.check_password(student_password)
     assert not student.check_password(student_password + 'bar')
+
+
+@pytest.fixture(scope='module')
+def test_project(db, test_users, config_path):
+    teacher_name, teacher_password, student_name, student_password = test_users
+    payload = os.path.join(os.path.dirname(__file__), 'fixtures', 'hello.py.zip')
+    call = ['autograder', '--config', config_path,
+            'project', 'add', teacher_name, 'Simple project',
+            payload, 'python hello.py', '-p', teacher_password]
+    output = subprocess.check_output(call)
+    print(output)
+    project_key = re.search(r'([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})',
+                            output).groups()[0]
+    return project_key
+
+
+def test_project_add(test_project):
+    from autograder.config import get_config
+    config = get_config()
+    payload_directory = config.local_config.payload_directory
+    assert os.path.isfile(os.path.join(payload_directory, test_project + '.zip'))
 
 
 @pytest.fixture(scope='module')
